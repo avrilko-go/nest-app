@@ -77,13 +77,13 @@ export class PostService {
         orderBy?: PostOrderType,
     ): SelectQueryBuilder<T> {
         switch (orderBy) {
-            case PostOrderType.created:
+            case PostOrderType.CREATED:
                 return qb.orderBy('post.createdAt', 'DESC');
-            case PostOrderType.publishAt:
+            case PostOrderType.PUBLISH_AT:
                 return qb.orderBy('post.publishedAt', 'DESC');
-            case PostOrderType.updated:
+            case PostOrderType.UPDATED:
                 return qb.orderBy('post.updatedAt', 'DESC');
-            case PostOrderType.customer:
+            case PostOrderType.CUSTOMER:
                 return qb.orderBy('post.customerOrder', 'DESC');
             default:
                 return qb

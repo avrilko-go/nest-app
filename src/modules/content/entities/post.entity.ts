@@ -1,16 +1,20 @@
 import { Expose } from 'class-transformer';
 import {
+    BaseEntity,
     Column,
     CreateDateColumn,
     Entity,
+    JoinTable,
+    ManyToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
 
 import { PostType } from '@/modules/content/constans';
+import { CategoryEntity } from '@/modules/content/entities/category.entity';
 
 @Entity('posts')
-export class PostEntity {
+export class PostEntity extends BaseEntity {
     @Expose()
     @PrimaryGeneratedColumn('increment', { type: 'bigint', comment: '文章主键' })
     id!: number;
@@ -32,7 +36,13 @@ export class PostEntity {
     body!: string;
 
     @Expose()
-    @Column({ nullable: false, default: PostType.HTML, comment: '文章类型', enum: PostType })
+    @Column({
+        type: 'enum',
+        nullable: false,
+        default: PostType.HTML,
+        comment: '文章类型',
+        enum: PostType,
+    })
     type!: PostType;
 
     @Expose()
@@ -50,4 +60,10 @@ export class PostEntity {
     @Expose()
     @UpdateDateColumn({ nullable: true, type: 'datetime', comment: '创建时间' })
     updatedAt: Date;
+
+    @ManyToMany(() => CategoryEntity, (category) => category.posts, {
+        cascade: true,
+    })
+    @JoinTable()
+    categories!: CategoryEntity[];
 }

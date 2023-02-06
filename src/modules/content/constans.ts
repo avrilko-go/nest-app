@@ -4,10 +4,10 @@ export enum PostType {
 }
 
 export enum PostOrderType {
-    created = 'createdAt',
-    updated = 'updatedAt',
+    CREATED = 'createdAt',
+    UPDATED = 'updatedAt',
 
-    publishAt = 'publishedAt',
+    PUBLISH_AT = 'publishedAt',
 
-    customer = 'custom',
+    CUSTOMER = 'custom',
 }
