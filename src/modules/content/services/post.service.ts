@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
-import { IsNull, Not, SelectQueryBuilder } from 'typeorm';
+import { omit } from 'lodash';
+import { EntityNotFoundError, IsNull, Not, SelectQueryBuilder } from 'typeorm';
 
 import { PostOrderType } from '@/modules/content/constans';
-import { QueryPostDto } from '@/modules/content/dtos';
+import { CreatePostDto, QueryPostDto, UpdatePostDto } from '@/modules/content/dtos';
 import { PostEntity } from '@/modules/content/entities';
 import { PostRepository } from '@/modules/content/repositories';
 import { paginate } from '@/modules/database/helpers';
@@ -20,6 +21,30 @@ export class PostService {
     async paginate(options: QueryPostDto, callback?: QueryHook<PostEntity>) {
         const qb = await this.buildQueryList(this.repository.buildBaseQB(), options, callback);
         return paginate(qb, options);
+    }
+
+    async create(data: CreatePostDto) {
+        const item = await this.repository.save(data);
+        return this.detail(item.id);
+    }
+
+    async detail(id: number) {
+        const item = await this.repository.buildBaseQB().where({ id }).getOne();
+        if (!item) {
+            throw new EntityNotFoundError(PostEntity, `The post ${id} not exists!`);
+        }
+
+        return item;
+    }
+
+    async update(data: UpdatePostDto) {
+        await this.repository.update(data.id, omit(data, ['id']));
+        return this.detail(data.id);
+    }
+
+    async delete(id: number) {
+        const item = await this.repository.findOneByOrFail({ id });
+        return this.repository.remove(item);
     }
 
     protected async buildQueryList(
