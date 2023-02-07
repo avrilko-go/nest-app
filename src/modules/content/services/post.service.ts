@@ -62,10 +62,10 @@ export class PostService {
         if (typeof isPublished === 'boolean') {
             isPublished
                 ? qb.where({
-                      publishAt: Not(IsNull()),
+                      publishedAt: Not(IsNull()),
                   })
                 : qb.where({
-                      publishAt: IsNull(),
+                      publishedAt: IsNull(),
                   });
         }
         this.queryByOrder<PostEntity>(qb, orderBy);

@@ -14,9 +14,15 @@ import {
 import { isNil, isNumber, toNumber } from 'lodash';
 
 import { PostOrderType, PostType } from '@/modules/content/constans';
+import { DtoValidation } from '@/modules/core/decorators';
 import { toBoolean } from '@/modules/core/helpers';
 import { PaginateOptions } from '@/modules/database/types';
 
+@DtoValidation({
+    transform: true,
+    type: 'query',
+    validationError: { target: false },
+})
 export class QueryPostDto implements PaginateOptions {
     @ValidateIf((value) => isNumber(value.category))
     @Transform(({ value }) => toNumber(value))
@@ -44,6 +50,12 @@ export class QueryPostDto implements PaginateOptions {
     orderBy?: PostOrderType;
 }
 
+@DtoValidation({
+    transform: true,
+    type: 'body',
+    groups: ['create'],
+    validationError: { target: false },
+})
 export class CreatePostDto {
     @MaxLength(255, { message: '标题最长255', always: true })
     @IsOptional({ groups: ['update'] })
@@ -81,6 +93,12 @@ export class CreatePostDto {
     customerOrder?: number;
 }
 
+@DtoValidation({
+    transform: true,
+    type: 'body',
+    groups: ['update'],
+    validationError: { target: false },
+})
 export class UpdatePostDto extends PartialType(CreatePostDto) {
     @IsOptional({ groups: ['create'] })
     @Transform(({ value }) => toNumber(value))

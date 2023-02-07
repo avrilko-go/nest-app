@@ -11,8 +11,14 @@ import {
 } from 'class-validator';
 import { isNumber, toNumber } from 'lodash';
 
+import { DtoValidation } from '@/modules/core/decorators';
 import { PaginateOptions } from '@/modules/database/types';
 
+@DtoValidation({
+    transform: true,
+    type: 'query',
+    validationError: { target: false },
+})
 export class QueryCategoryDto implements PaginateOptions {
     @Transform(({ value }) => toNumber(value))
     @Min(1, { message: '每页显示数据必须大于1' })
@@ -27,6 +33,12 @@ export class QueryCategoryDto implements PaginateOptions {
     page = 1;
 }
 
+@DtoValidation({
+    transform: true,
+    type: 'body',
+    groups: ['create'],
+    validationError: { target: false },
+})
 export class CreateCategoryDto {
     @MaxLength(25, { always: true, message: '分类名称长度不得超过$constraint1' })
     @IsNotEmpty({ groups: ['create'], message: '分类名称不能为空' })
@@ -46,6 +58,12 @@ export class CreateCategoryDto {
     customOrder = 0;
 }
 
+@DtoValidation({
+    transform: true,
+    type: 'body',
+    groups: ['update'],
+    validationError: { target: false },
+})
 export class UpdateCategoryDto extends PartialType(CreateCategoryDto) {
     @IsNumber()
     @IsDefined({ groups: ['update'] })

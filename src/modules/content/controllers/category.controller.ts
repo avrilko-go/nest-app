@@ -10,7 +10,6 @@ import {
     Query,
     SerializeOptions,
     UseInterceptors,
-    ValidationPipe,
 } from '@nestjs/common';
 
 import { CreateCategoryDto, QueryCategoryDto, UpdateCategoryDto } from '@/modules/content/dtos';
@@ -31,13 +30,7 @@ export class CategoryController {
     @Get()
     @SerializeOptions({ groups: ['category-list'] })
     async list(
-        @Query(
-            new ValidationPipe({
-                transform: true,
-                forbidUnknownValues: true,
-                validationError: { target: false },
-            }),
-        )
+        @Query()
         options: QueryCategoryDto,
     ) {
         return this.categoryService.paginate(options);
@@ -46,12 +39,7 @@ export class CategoryController {
     @Post()
     @SerializeOptions({ groups: ['category-detail'] })
     async store(
-        @Body(
-            new ValidationPipe({
-                transform: true,
-                validationError: { target: false },
-            }),
-        )
+        @Body()
         data: CreateCategoryDto,
     ) {
         return this.categoryService.create(data);
@@ -69,13 +57,7 @@ export class CategoryController {
     @Patch()
     @SerializeOptions({ groups: ['category-detail'] })
     async update(
-        @Body(
-            new ValidationPipe({
-                transform: true,
-                validationError: { target: false },
-                groups: ['update'],
-            }),
-        )
+        @Body()
         data: UpdateCategoryDto,
     ) {
         return this.categoryService.update(data);
