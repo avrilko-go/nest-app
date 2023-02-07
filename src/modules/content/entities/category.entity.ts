@@ -1,4 +1,4 @@
-import { Expose } from 'class-transformer';
+import { Expose, Exclude, Type } from 'class-transformer';
 import {
     BaseEntity,
     Column,
@@ -12,6 +12,7 @@ import {
 
 import { PostEntity } from '@/modules/content/entities/post.entity';
 
+@Exclude()
 @Tree('materialized-path')
 @Entity('categories')
 export class CategoryEntity extends BaseEntity {
@@ -30,10 +31,12 @@ export class CategoryEntity extends BaseEntity {
     @ManyToMany(() => PostEntity, (post) => post.categories)
     posts!: PostEntity[];
 
+    @Type(() => CategoryEntity)
     @Expose({ groups: ['category-list', 'category-detail'] })
     @TreeParent({ onDelete: 'NO ACTION' })
     parent!: CategoryEntity | null;
 
+    @Type(() => CategoryEntity)
     @Expose({ groups: ['category-tree'] })
     @TreeChildren({ cascade: true })
     children!: CategoryEntity[];
