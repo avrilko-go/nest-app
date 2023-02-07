@@ -18,28 +18,30 @@ import { PostEntity } from '@/modules/content/entities/post.entity';
 export class CategoryEntity extends BaseEntity {
     @Expose()
     @PrimaryGeneratedColumn('increment', { type: 'bigint', comment: '分类主键' })
-    id!: number;
+    id: number;
 
     @Expose()
     @Column({ type: 'varchar', length: 100, nullable: false, default: '', comment: '分类名称' })
-    name!: string;
+    name: string;
 
     @Expose({ groups: ['category-tree', 'category-list', 'category-detail'] })
     @Column({ type: 'int', default: 0, nullable: false, comment: '分类排序' })
-    customOrder!: number;
+    customOrder: number;
 
-    @ManyToMany(() => PostEntity, (post) => post.categories)
-    posts!: PostEntity[];
+    @ManyToMany(() => PostEntity, (post) => post.categories, {
+        createForeignKeyConstraints: false,
+    })
+    posts: PostEntity[];
 
     @Type(() => CategoryEntity)
     @Expose({ groups: ['category-list', 'category-detail'] })
     @TreeParent({ onDelete: 'NO ACTION' })
-    parent!: CategoryEntity | null;
+    parent: CategoryEntity | null;
 
     @Type(() => CategoryEntity)
     @Expose({ groups: ['category-tree'] })
     @TreeChildren({ cascade: true })
-    children!: CategoryEntity[];
+    children: CategoryEntity[];
 
     @Expose({ groups: ['category-list'] })
     depth = 0;

@@ -6,7 +6,8 @@ import { EntityNotFoundError, IsNull, Not, SelectQueryBuilder } from 'typeorm';
 import { PostOrderType } from '@/modules/content/constans';
 import { CreatePostDto, QueryPostDto, UpdatePostDto } from '@/modules/content/dtos';
 import { PostEntity } from '@/modules/content/entities';
-import { PostRepository } from '@/modules/content/repositories';
+import { CategoryRepository, PostRepository } from '@/modules/content/repositories';
+import { CategoryService } from '@/modules/content/services/category.service';
 import { paginate } from '@/modules/database/helpers';
 import { QueryHook } from '@/modules/database/types';
 
@@ -16,7 +17,11 @@ type FindParams = {
 
 @Injectable()
 export class PostService {
-    constructor(protected repository: PostRepository) {}
+    constructor(
+        protected repository: PostRepository,
+        protected categoryService: CategoryService,
+        protected categoryRepository: CategoryRepository,
+    ) {}
 
     async paginate(options: QueryPostDto, callback?: QueryHook<PostEntity>) {
         const qb = await this.buildQueryList(this.repository.buildBaseQB(), options, callback);
@@ -52,7 +57,7 @@ export class PostService {
         options: FindParams,
         callback?: QueryHook<PostEntity>,
     ) {
-        const { isPublished, orderBy } = options;
+        const { isPublished, orderBy, category } = options;
 
         if (typeof isPublished === 'boolean') {
             isPublished
@@ -64,6 +69,10 @@ export class PostService {
                   });
         }
         this.queryByOrder<PostEntity>(qb, orderBy);
+
+        if (category) {
+            await this.queryByCategory(qb, category);
+        }
 
         if (typeof callback === 'function') {
             return callback(qb);
@@ -91,5 +100,16 @@ export class PostService {
                     .addOrderBy('post.updatedAt', 'DESC')
                     .addOrderBy('post.publishedAt', 'DESC');
         }
+    }
+
+    protected async queryByCategory(qb: SelectQueryBuilder<PostEntity>, category: number) {
+        const root = await this.categoryService.detail(category);
+        const tree = await this.categoryRepository.findDescendants(root);
+        const flatDes = await this.categoryRepository.toFlatTrees(tree);
+        if (flatDes.length > 0) {
+            const ids = [root.id, ...flatDes.map((v) => v.id)];
+            return qb.where('category.id IN (...:ids)', { ids });
+        }
+        return qb;
     }
 }

@@ -11,13 +11,19 @@ import {
     Min,
     ValidateIf,
 } from 'class-validator';
-import { isNil, toNumber } from 'lodash';
+import { isNil, isNumber, toNumber } from 'lodash';
 
 import { PostOrderType, PostType } from '@/modules/content/constans';
 import { toBoolean } from '@/modules/core/helpers';
 import { PaginateOptions } from '@/modules/database/types';
 
 export class QueryPostDto implements PaginateOptions {
+    @ValidateIf((value) => isNumber(value.category))
+    @Transform(({ value }) => toNumber(value))
+    @IsNumber()
+    @Min(1, { message: '分类id必须大于1' })
+    category?: number;
+
     @Transform(({ value }) => toNumber(value))
     @IsNumber()
     @Min(1, { message: '每页显示数量最小为1' })

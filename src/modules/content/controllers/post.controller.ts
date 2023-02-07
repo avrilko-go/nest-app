@@ -33,7 +33,7 @@ export class PostController {
 
     @SerializeOptions({ groups: ['post-detail'] })
     @Post()
-    async creqte(
+    async create(
         @Body(
             new ValidationPipe({
                 transform: true,

@@ -6,12 +6,14 @@ import {
     Entity,
     JoinTable,
     ManyToMany,
+    OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
 
 import { PostType } from '@/modules/content/constans';
 import { CategoryEntity } from '@/modules/content/entities/category.entity';
+import { CommentEntity } from '@/modules/content/entities/comment.entity';
 
 @Entity('posts')
 export class PostEntity extends BaseEntity {
@@ -63,7 +65,17 @@ export class PostEntity extends BaseEntity {
 
     @ManyToMany(() => CategoryEntity, (category) => category.posts, {
         cascade: true,
+        createForeignKeyConstraints: false,
     })
     @JoinTable()
     categories!: CategoryEntity[];
+
+    @OneToMany(() => CommentEntity, (comment) => comment.post, {
+        cascade: true,
+        createForeignKeyConstraints: false,
+    })
+    comments!: CommentEntity[];
+
+    @Expose()
+    commentCount: number;
 }
