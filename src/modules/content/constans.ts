@@ -10,4 +10,6 @@ export enum PostOrderType {
     PUBLISH_AT = 'publishedAt',
 
     CUSTOMER = 'custom',
+
+    COMMENT = 'commentCount',
 }

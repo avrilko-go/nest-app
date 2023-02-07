@@ -11,6 +11,22 @@ import {
 } from 'class-validator';
 import { isNumber, toNumber } from 'lodash';
 
+import { PaginateOptions } from '@/modules/database/types';
+
+export class QueryCategoryDto implements PaginateOptions {
+    @Transform(({ value }) => toNumber(value))
+    @Min(1, { message: '每页显示数据必须大于1' })
+    @IsNumber()
+    @IsOptional()
+    limit = 10;
+
+    @Transform(({ value }) => toNumber(value))
+    @Min(1, { message: '当前页必须大于1' })
+    @IsNumber()
+    @IsOptional()
+    page = 1;
+}
+
 export class CreateCategoryDto {
     @MaxLength(25, { always: true, message: '分类名称长度不得超过$constraint1' })
     @IsNotEmpty({ groups: ['create'], message: '分类名称不能为空' })

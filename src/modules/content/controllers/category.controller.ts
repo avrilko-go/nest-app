@@ -1,6 +1,14 @@
-import { Body, Controller, Get, Post, UseInterceptors, ValidationPipe } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Get,
+    Post,
+    Query,
+    UseInterceptors,
+    ValidationPipe,
+} from '@nestjs/common';
 
-import { CreateCategoryDto } from '@/modules/content/dtos';
+import { CreateCategoryDto, QueryCategoryDto } from '@/modules/content/dtos';
 import { CategoryService } from '@/modules/content/services';
 import { AppInterceptor } from '@/modules/core/providers/app.interceptor';
 
@@ -12,6 +20,20 @@ export class CategoryController {
     @Get('tree')
     async tree() {
         return this.categoryService.findTrees();
+    }
+
+    @Get()
+    async list(
+        @Query(
+            new ValidationPipe({
+                transform: true,
+                forbidUnknownValues: true,
+                validationError: { target: false },
+            }),
+        )
+        options: QueryCategoryDto,
+    ) {
+        return this.categoryService.paginate(options);
     }
 
     @Post()

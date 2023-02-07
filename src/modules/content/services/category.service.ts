@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 
 import { EntityNotFoundError } from 'typeorm';
 
-import { CreateCategoryDto } from '@/modules/content/dtos';
+import { CreateCategoryDto, QueryCategoryDto } from '@/modules/content/dtos';
 import { CategoryEntity } from '@/modules/content/entities';
 import { CategoryRepository } from '@/modules/content/repositories';
+import { manualPaginate } from '@/modules/database/helpers';
 
 @Injectable()
 export class CategoryService {
@@ -16,6 +17,16 @@ export class CategoryService {
 
     async findTrees() {
         return this.repository.findTrees();
+    }
+
+    /**
+     * 获取分页数据
+     * @param options 分页选项
+     */
+    async paginate(options: QueryCategoryDto) {
+        const tree = await this.repository.findTrees();
+        const data = await this.repository.toFlatTrees(tree);
+        return manualPaginate(options, data);
     }
 
     async create(data: CreateCategoryDto) {

@@ -94,6 +94,8 @@ export class PostService {
                 return qb.orderBy('post.updatedAt', 'DESC');
             case PostOrderType.CUSTOMER:
                 return qb.orderBy('post.customerOrder', 'DESC');
+            case PostOrderType.COMMENT:
+                return qb.orderBy('commentCount', 'DESC');
             default:
                 return qb
                     .orderBy('post.createdAt', 'DESC')
