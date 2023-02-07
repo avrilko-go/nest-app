@@ -104,12 +104,9 @@ export class PostService {
 
     protected async queryByCategory(qb: SelectQueryBuilder<PostEntity>, category: number) {
         const root = await this.categoryService.detail(category);
-        const tree = await this.categoryRepository.findDescendants(root);
-        const flatDes = await this.categoryRepository.toFlatTrees(tree);
-        if (flatDes.length > 0) {
-            const ids = [root.id, ...flatDes.map((v) => v.id)];
-            return qb.where('category.id IN (...:ids)', { ids });
-        }
-        return qb;
+        const tree = await this.categoryRepository.findDescendantsTree(root);
+        const flatDes = await this.categoryRepository.toFlatTrees(tree.children);
+        const ids = [root.id, ...flatDes.map((v) => v.id)];
+        return qb.where('categories.id IN (:...ids)', { ids });
     }
 }

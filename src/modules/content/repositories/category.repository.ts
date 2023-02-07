@@ -50,7 +50,7 @@ export class CategoryRepository extends TreeRepository<CategoryEntity> {
     findDescendants(entity: CategoryEntity, options?: FindTreeOptions) {
         const qb = this.createDescendantsQueryBuilder('category', 'treeClosure', entity);
         FindOptionsUtils.applyOptionsToTreeQueryBuilder(qb, options);
-        // qb.orderBy(`category.customOrder`, 'ASC');
+        qb.orderBy(`category.customOrder`, 'ASC');
         return qb.getMany();
     }
 
