@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-import { omit } from 'lodash';
-import { EntityNotFoundError, IsNull, Not, SelectQueryBuilder } from 'typeorm';
+import { isArray, omit } from 'lodash';
+import { EntityNotFoundError, In, IsNull, Not, SelectQueryBuilder } from 'typeorm';
 
 import { PostOrderType } from '@/modules/content/constans';
 import { CreatePostDto, QueryPostDto, UpdatePostDto } from '@/modules/content/dtos';
@@ -29,7 +29,17 @@ export class PostService {
     }
 
     async create(data: CreatePostDto) {
-        const item = await this.repository.save(data);
+        const createPostDto = {
+            ...data,
+            // 文章所属分类
+            categories: isArray(data.categories)
+                ? await this.categoryRepository.findBy({
+                      id: In(data.categories),
+                  })
+                : [],
+        };
+        console.log(createPostDto);
+        const item = await this.repository.save(createPostDto);
         return this.detail(item.id);
     }
 
@@ -43,7 +53,16 @@ export class PostService {
     }
 
     async update(data: UpdatePostDto) {
-        await this.repository.update(data.id, omit(data, ['id']));
+        const post = await this.detail(data.id);
+        if (isArray(data.categories)) {
+            // 更新文章所属分类
+            await this.repository
+                .createQueryBuilder('post')
+                .relation(PostEntity, 'categories')
+                .of(post)
+                .addAndRemove(data.categories, post.categories ?? []);
+        }
+        await this.repository.update(data.id, omit(data, ['id', 'categories']));
         return this.detail(data.id);
     }
 
@@ -58,7 +77,6 @@ export class PostService {
         callback?: QueryHook<PostEntity>,
     ) {
         const { isPublished, orderBy, category } = options;
-
         if (typeof isPublished === 'boolean') {
             isPublished
                 ? qb.where({

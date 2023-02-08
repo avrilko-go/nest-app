@@ -11,19 +11,22 @@ import {
     Min,
     ValidateIf,
 } from 'class-validator';
-import { isNil, isNumber, toNumber } from 'lodash';
+import { isNil, isNumber, isUndefined, toNumber } from 'lodash';
 
 import { PostOrderType, PostType } from '@/modules/content/constans';
+import { CategoryEntity } from '@/modules/content/entities';
 import { DtoValidation } from '@/modules/core/decorators';
 import { toBoolean } from '@/modules/core/helpers';
+import { IsDataExist } from '@/modules/database/constraints';
 import { PaginateOptions } from '@/modules/database/types';
 
 @DtoValidation({
-    transform: true,
     type: 'query',
-    validationError: { target: false },
 })
 export class QueryPostDto implements PaginateOptions {
+    @IsDataExist(CategoryEntity, {
+        message: '指定的分类不存在',
+    })
     @ValidateIf((value) => isNumber(value.category))
     @Transform(({ value }) => toNumber(value))
     @IsNumber()
@@ -40,7 +43,7 @@ export class QueryPostDto implements PaginateOptions {
     @Min(1, { message: '页数最小为1' })
     page = 1;
 
-    @Transform(({ value }) => toBoolean(value))
+    @Transform(({ value }) => (isUndefined(value) ? value : toBoolean(value)))
     @IsBoolean()
     @IsOptional()
     isPublished?: boolean;
@@ -51,10 +54,8 @@ export class QueryPostDto implements PaginateOptions {
 }
 
 @DtoValidation({
-    transform: true,
     type: 'body',
     groups: ['create'],
-    validationError: { target: false },
 })
 export class CreatePostDto {
     @MaxLength(255, { message: '标题最长255', always: true })
@@ -87,17 +88,29 @@ export class CreatePostDto {
     keywords?: string[];
 
     @Min(0, { message: '排序最小为0', always: true })
-    @Transform(({ value }) => toNumber(value))
+    @Transform(({ value }) => (isUndefined(value) ? value : toNumber(value)))
     @IsOptional({ always: true })
     @IsNumber(undefined, { always: true })
     customerOrder?: number;
+
+    @Transform(({ value }) => value.map((v: any) => toNumber(v)))
+    @IsDataExist(CategoryEntity, {
+        each: true,
+        always: true,
+        message: '分类不存在',
+    })
+    @IsNumber(undefined, {
+        each: true,
+        always: true,
+        message: '分类ID格式不正确',
+    })
+    @IsOptional({ always: true })
+    categories?: number[];
 }
 
 @DtoValidation({
-    transform: true,
     type: 'body',
     groups: ['update'],
-    validationError: { target: false },
 })
 export class UpdatePostDto extends PartialType(CreatePostDto) {
     @IsOptional({ groups: ['create'] })

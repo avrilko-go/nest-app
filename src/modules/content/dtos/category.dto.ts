@@ -11,13 +11,13 @@ import {
 } from 'class-validator';
 import { isNumber, toNumber } from 'lodash';
 
+import { CategoryEntity } from '@/modules/content/entities';
 import { DtoValidation } from '@/modules/core/decorators';
+import { IsDataExist } from '@/modules/database/constraints';
 import { PaginateOptions } from '@/modules/database/types';
 
 @DtoValidation({
-    transform: true,
     type: 'query',
-    validationError: { target: false },
 })
 export class QueryCategoryDto implements PaginateOptions {
     @Transform(({ value }) => toNumber(value))
@@ -34,10 +34,8 @@ export class QueryCategoryDto implements PaginateOptions {
 }
 
 @DtoValidation({
-    transform: true,
     type: 'body',
     groups: ['create'],
-    validationError: { target: false },
 })
 export class CreateCategoryDto {
     @MaxLength(25, { always: true, message: '分类名称长度不得超过$constraint1' })
@@ -45,6 +43,7 @@ export class CreateCategoryDto {
     @IsOptional({ groups: ['update'] })
     name!: string;
 
+    @IsDataExist(CategoryEntity, { always: true, message: '父分类不存在' })
     @Transform(({ value }) => toNumber(value))
     @IsOptional({ always: true })
     @IsNumber(undefined, { always: true })
@@ -59,10 +58,8 @@ export class CreateCategoryDto {
 }
 
 @DtoValidation({
-    transform: true,
     type: 'body',
     groups: ['update'],
-    validationError: { target: false },
 })
 export class UpdateCategoryDto extends PartialType(CreateCategoryDto) {
     @IsNumber()

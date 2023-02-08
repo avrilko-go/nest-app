@@ -2,10 +2,10 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm/dist/interfaces/typeorm-op
 
 export const database: () => TypeOrmModuleOptions = () => ({
     type: 'mysql',
-    host: '127.0.0.1',
+    host: '172.17.22.37',
     port: 3306,
     username: 'root',
-    password: '123456',
+    password: 'root',
     database: 'avrilko',
     charset: 'utf8mb4',
     synchronize: true,
