@@ -34,7 +34,7 @@ export class PostEntity extends BaseEntity {
     summary?: string;
 
     @Expose({ groups: ['post-detail'] })
-    @Column({ nullable: true, type: 'longtext', comment: '文章内容' })
+    @Column({ nullable: true, type: 'text', comment: '文章内容' })
     body!: string;
 
     @Expose()
@@ -52,15 +52,15 @@ export class PostEntity extends BaseEntity {
     customerOrder?: number;
 
     @Expose()
-    @Column({ nullable: true, type: 'datetime', comment: '发布时间' })
+    @Column({ nullable: true, type: 'timestamp', comment: '发布时间' })
     publishedAt?: Date | null;
 
     @Expose()
-    @CreateDateColumn({ nullable: true, type: 'datetime', comment: '创建时间' })
+    @CreateDateColumn({ nullable: true, type: 'timestamp', comment: '创建时间' })
     createdAt: Date;
 
     @Expose()
-    @UpdateDateColumn({ nullable: true, type: 'datetime', comment: '创建时间' })
+    @UpdateDateColumn({ nullable: true, type: 'timestamp', comment: '创建时间' })
     updatedAt: Date;
 
     @ManyToMany(() => CategoryEntity, (category) => category.posts, {

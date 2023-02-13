@@ -9,7 +9,7 @@ import {
     Min,
     ValidateIf,
 } from 'class-validator';
-import { isNumber, toNumber } from 'lodash';
+import { isNumber, isUndefined, toNumber } from 'lodash';
 
 import { CategoryEntity } from '@/modules/content/entities';
 import { DtoValidation } from '@/modules/core/decorators';
@@ -44,7 +44,7 @@ export class CreateCategoryDto {
     name!: string;
 
     @IsDataExist(CategoryEntity, { always: true, message: '父分类不存在' })
-    @Transform(({ value }) => toNumber(value))
+    @Transform(({ value }) => (isUndefined(value) ? value : toNumber(value)))
     @IsOptional({ always: true })
     @IsNumber(undefined, { always: true })
     @ValidateIf((value) => isNumber(value.parent))

@@ -22,12 +22,12 @@ export class CommentEntity extends BaseEntity {
     id!: number;
 
     @Expose()
-    @Column({ type: 'longtext', comment: '评论内容' })
+    @Column({ type: 'text', comment: '评论内容' })
     body!: string;
 
     @Expose()
     @Type(() => Date)
-    @CreateDateColumn({ type: 'datetime', comment: '创建时间', nullable: true })
+    @CreateDateColumn({ type: 'timestamp', comment: '创建时间', nullable: true })
     createdAt!: Date;
 
     @Expose()
