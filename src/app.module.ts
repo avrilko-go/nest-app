@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 
-import { database, elastic } from '@/config';
+import { content, database, elastic } from '@/config';
 import { ContentModule } from '@/modules/content/content.module';
 import { AppFilter } from '@/modules/core/providers/app.filter';
 import { AppInterceptor } from '@/modules/core/providers/app.interceptor';
@@ -11,7 +11,11 @@ import { DatabaseModule } from '@/modules/database/database.module';
 import { ElasticModule } from '@/modules/elastic/elastic.module';
 
 @Module({
-    imports: [DatabaseModule.forRoot(database), ContentModule, ElasticModule.forRoot(elastic)],
+    imports: [
+        DatabaseModule.forRoot(database),
+        ContentModule.forRoot(content),
+        ElasticModule.forRoot(elastic),
+    ],
     controllers: [],
     providers: [
         {

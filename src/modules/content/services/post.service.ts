@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 
 import { isArray, isNil, omit } from 'lodash';
 import { EntityNotFoundError, In, IsNull, Not, SelectQueryBuilder } from 'typeorm';
@@ -10,8 +10,8 @@ import { CategoryRepository, PostRepository } from '@/modules/content/repositori
 import { CategoryService } from '@/modules/content/services/category.service';
 import { SearchService } from '@/modules/content/services/search.service';
 import { SelectTrashMode } from '@/modules/database/constants';
-import { paginate } from '@/modules/database/helpers';
-import { QueryHook } from '@/modules/database/types';
+import { manualPaginate, paginate } from '@/modules/database/helpers';
+import { QueryHook, SearchType } from '@/modules/database/types';
 
 type FindParams = {
     [key in keyof Omit<QueryPostDto, 'limit' | 'page'>]: QueryPostDto[key];
@@ -24,25 +24,46 @@ export class PostService {
         protected categoryService: CategoryService,
         protected categoryRepository: CategoryRepository,
         protected searchService?: SearchService,
+
+        protected searchType: SearchType = 'against',
     ) {}
 
     async paginate(options: QueryPostDto, callback?: QueryHook<PostEntity>) {
+        if (!isNil(options.search) && !isNil(this.searchType) && this.searchType === 'elastic') {
+            const { search: text, limit, page } = options;
+            const results = await this.searchService.search(text);
+            const ids = results.map((v) => v.id);
+            const posts =
+                ids.length <= 0 ? [] : await this.repository.find({ where: { id: In(ids) } });
+            return manualPaginate({ page, limit }, posts);
+        }
+
         const qb = await this.buildQueryList(this.repository.buildBaseQB(), options, callback);
         return paginate(qb, options);
     }
 
     async create(data: CreatePostDto) {
+        console.log(this.categoryRepository);
+
         const createPostDto = {
             ...data,
             // 文章所属分类
             categories: isArray(data.categories)
-                ? await this.categoryRepository.findBy({
-                      id: In(data.categories),
+                ? await this.categoryRepository.find({
+                      where: {
+                          id: In(data.categories),
+                      },
                   })
                 : [],
         };
-        console.log(createPostDto);
         const item = await this.repository.save(createPostDto);
+        if (!isNil(this.searchService)) {
+            try {
+                await this.searchService.create(item);
+            } catch (err) {
+                throw new InternalServerErrorException(err);
+            }
+        }
         return this.detail(item.id);
     }
 
@@ -66,6 +87,14 @@ export class PostService {
                 .addAndRemove(data.categories, post.categories ?? []);
         }
         await this.repository.update(data.id, omit(data, ['id', 'categories']));
+
+        if (!isNil(this.searchService)) {
+            try {
+                await this.searchService.update(post);
+            } catch (err) {
+                throw new InternalServerErrorException(err);
+            }
+        }
         return this.detail(data.id);
     }
 
@@ -74,17 +103,27 @@ export class PostService {
             where: { id: In(ids) },
             withDeleted: true,
         });
+        let result: PostEntity[] = [];
         if (trash) {
             const directs = items.filter((item) => !isNil(item.deletedAt));
             const softS = items.filter((item) => isNil(item.deletedAt));
 
-            return [
+            result = [
                 ...(await this.repository.remove(directs)),
                 ...(await this.repository.softRemove(softS)),
             ];
+        } else {
+            result = await this.repository.remove(items);
         }
 
-        return this.repository.remove(items);
+        if (!isNil(this.searchService)) {
+            try {
+                for (const id of ids) await this.searchService.remove(id);
+            } catch (err) {
+                throw new InternalServerErrorException(err);
+            }
+        }
+        return result;
     }
 
     async restore(ids: number[]) {
@@ -93,12 +132,18 @@ export class PostService {
             withDeleted: true,
         });
 
-        const trashedS = items.filter((item) => !isNil(item)).map((item) => item.id);
-        if (trashedS.length === 0) {
-            return [];
-        }
+        const trashedS = items.filter((item) => !isNil(item));
+        if (trashedS.length < 0) return [];
 
-        await this.repository.restore(trashedS);
+        await this.repository.restore(trashedS.map((item) => item.id));
+
+        if (!isNil(this.searchService)) {
+            try {
+                for (const id of trashedS) await this.searchService.create(id);
+            } catch (err) {
+                throw new InternalServerErrorException(err);
+            }
+        }
 
         const qb = await this.buildQueryList(this.repository.buildBaseQB(), {}, async (qBuilder) =>
             qBuilder.andWhereInIds(trashedS),
@@ -112,7 +157,7 @@ export class PostService {
         options: FindParams,
         callback?: QueryHook<PostEntity>,
     ) {
-        const { isPublished, orderBy, category, trashed = SelectTrashMode.NONE } = options;
+        const { isPublished, orderBy, category, search, trashed = SelectTrashMode.NONE } = options;
 
         if (trashed === SelectTrashMode.ALL || trashed === SelectTrashMode.ONLY) {
             qb.withDeleted();
@@ -132,6 +177,31 @@ export class PostService {
                       publishedAt: IsNull(),
                   });
         }
+
+        if (!isNil(search)) {
+            if (this.searchType === 'like') {
+                qb.andWhere('title LIKE :search', { search: `%${search}%` })
+                    .orWhere('body LIKE :search', { search: `%${search}%` })
+                    .orWhere('summary LIKE :search', { search: `%${search}%` })
+                    .orWhere('post.categories LIKE :search', {
+                        search: `%${search}%`,
+                    });
+            } else {
+                qb.andWhere('MATCH(title) AGAINST (:search IN BOOLEAN MODE)', {
+                    search: `${search}`,
+                })
+                    .orWhere('MATCH(body) AGAINST (:search IN BOOLEAN MODE)', {
+                        search: `${search}`,
+                    })
+                    .orWhere('MATCH(summary) AGAINST (:search IN BOOLEAN MODE)', {
+                        search: `${search}`,
+                    })
+                    .orWhere('MATCH(categories.name) AGAINST (:search IN BOOLEAN MODE)', {
+                        search: `${search}`,
+                    });
+            }
+        }
+
         this.queryByOrder<PostEntity>(qb, orderBy);
 
         if (category) {

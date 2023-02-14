@@ -23,6 +23,7 @@ export class PostEntity extends BaseEntity {
     @PrimaryGeneratedColumn('increment', { type: 'bigint', comment: '文章主键' })
     id!: number;
 
+    @Index({ fulltext: true })
     @Expose()
     @Column({ nullable: false, default: '', type: 'varchar', length: 255, comment: '文章标题' })
     title!: string;
@@ -31,6 +32,7 @@ export class PostEntity extends BaseEntity {
     @Column({ nullable: true, type: 'json', comment: '关键词' })
     keywords?: string[];
 
+    @Index({ fulltext: true })
     @Expose()
     @Column({ nullable: false, default: '', length: 255, comment: '文章描述' })
     summary?: string;

@@ -7,6 +7,8 @@ import { SearchService } from '@/modules/content/services/search.service';
 import { PostSubscriber } from '@/modules/content/subscribers';
 import { DatabaseModule } from '@/modules/database/database.module';
 
+import { ContentConfig } from '@/modules/database/types';
+
 import * as controllers from './controllers';
 import * as entities from './entities';
 import * as repositories from './repositories';
@@ -27,7 +29,12 @@ import { CategoryService } from './services';
     ],
 })
 export class ContentModule {
-    static forRoot(): DynamicModule {
+    static forRoot(configRegister?: () => ContentConfig): DynamicModule {
+        const config: Required<ContentConfig> = {
+            searchType: 'against',
+            ...(configRegister ? configRegister() : {}),
+        };
+
         const providers: ModuleMetadata['providers'] = [
             ...Object.values(services),
             PostSubscriber,
@@ -50,14 +57,28 @@ export class ContentModule {
                         categoryService,
                         categoryRepository,
                         searchService,
+                        config.searchType,
                     ),
             },
         ];
+
+        if (config.searchType === 'elastic') {
+            providers.push(SearchService);
+        }
 
         return {
             module: ContentModule,
             providers,
             controllers: Object.values(controllers),
+            imports: [
+                TypeOrmModule.forFeature(Object.values(entities)),
+                DatabaseModule.forRepository(Object.values(repositories)),
+            ],
+            exports: [
+                ...Object.values(services),
+                DatabaseModule.forRepository(Object.values(repositories)),
+                PostService,
+            ],
         };
     }
 }
