@@ -69,9 +69,9 @@ export class CategoryController {
         return this.categoryService.update(data);
     }
 
-    @Delete(':id')
+    @Delete()
     @SerializeOptions({ groups: ['category-detail'] })
-    async delete(@Query() data: DeleteWithTrashDto) {
+    async delete(@Body() data: DeleteWithTrashDto) {
         const { ids, trash } = data;
         return this.categoryService.delete(ids, trash);
     }
