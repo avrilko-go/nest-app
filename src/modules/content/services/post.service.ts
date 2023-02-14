@@ -8,6 +8,7 @@ import { CreatePostDto, QueryPostDto, UpdatePostDto } from '@/modules/content/dt
 import { PostEntity } from '@/modules/content/entities';
 import { CategoryRepository, PostRepository } from '@/modules/content/repositories';
 import { CategoryService } from '@/modules/content/services/category.service';
+import { SearchService } from '@/modules/content/services/search.service';
 import { SelectTrashMode } from '@/modules/database/constants';
 import { paginate } from '@/modules/database/helpers';
 import { QueryHook } from '@/modules/database/types';
@@ -22,6 +23,7 @@ export class PostService {
         protected repository: PostRepository,
         protected categoryService: CategoryService,
         protected categoryRepository: CategoryRepository,
+        protected searchService?: SearchService,
     ) {}
 
     async paginate(options: QueryPostDto, callback?: QueryHook<PostEntity>) {

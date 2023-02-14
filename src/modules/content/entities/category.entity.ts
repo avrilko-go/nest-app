@@ -4,6 +4,7 @@ import {
     Column,
     DeleteDateColumn,
     Entity,
+    Index,
     ManyToMany,
     PrimaryGeneratedColumn,
     Tree,
@@ -23,6 +24,7 @@ export class CategoryEntity extends BaseEntity {
 
     @Expose()
     @Column({ type: 'varchar', length: 100, nullable: false, default: '', comment: '分类名称' })
+    @Index({ fulltext: true })
     name: string;
 
     @Expose({ groups: ['category-tree', 'category-list', 'category-detail'] })

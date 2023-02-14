@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 
 import { CreatePostDto, QueryPostDto, UpdatePostDto } from '@/modules/content/dtos';
-import { PostService } from '@/modules/content/services';
+import { PostService } from '@/modules/content/services/post.service';
 import { AppInterceptor } from '@/modules/core/providers/app.interceptor';
 import { DeleteWithTrashDto, RestoreDto } from '@/modules/restful/dtos';
 

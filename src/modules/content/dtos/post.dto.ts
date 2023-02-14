@@ -11,7 +11,7 @@ import {
     Min,
     ValidateIf,
 } from 'class-validator';
-import { isNil, isNumber, isUndefined, toNumber } from 'lodash';
+import { isArray, isNil, isNumber, isUndefined, toNumber } from 'lodash';
 
 import { PostOrderType, PostType } from '@/modules/content/constans';
 import { CategoryEntity } from '@/modules/content/entities';
@@ -56,6 +56,10 @@ export class QueryPostDto implements PaginateOptions {
     @IsOptional()
     @IsEnum(SelectTrashMode)
     trashed?: SelectTrashMode;
+
+    @IsOptional({ always: true })
+    @MaxLength(100, { message: `搜索字符串长度不得超过$constraint1`, always: true })
+    search?: string;
 }
 
 @DtoValidation({
@@ -98,7 +102,13 @@ export class CreatePostDto {
     @IsNumber(undefined, { always: true })
     customerOrder?: number;
 
-    @Transform(({ value }) => value.map((v: any) => toNumber(v)))
+    @Transform(({ value }) => {
+        if (isArray(value)) {
+            return value.map((v) => toNumber(v));
+        }
+
+        return value;
+    })
     @IsDataExist(CategoryEntity, {
         each: true,
         always: true,

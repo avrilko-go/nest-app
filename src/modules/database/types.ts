@@ -21,3 +21,9 @@ export interface PaginateReturn<T extends ObjectLiteral> {
 }
 
 export type QueryHook<T> = (qb: SelectQueryBuilder<T>) => Promise<SelectQueryBuilder<T>>;
+
+export type SearchType = 'like' | 'against' | 'elastic';
+
+export interface ContentConfig {
+    searchType?: SearchType;
+}

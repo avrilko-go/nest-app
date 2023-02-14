@@ -5,6 +5,7 @@ import {
     CreateDateColumn,
     DeleteDateColumn,
     Entity,
+    Index,
     JoinTable,
     ManyToMany,
     OneToMany,
@@ -36,6 +37,7 @@ export class PostEntity extends BaseEntity {
 
     @Expose({ groups: ['post-detail'] })
     @Column({ nullable: true, type: 'text', comment: '文章内容' })
+    @Index({ fulltext: true })
     body!: string;
 
     @Expose()
