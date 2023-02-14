@@ -2,6 +2,7 @@ import { Expose, Exclude, Type } from 'class-transformer';
 import {
     BaseEntity,
     Column,
+    DeleteDateColumn,
     Entity,
     ManyToMany,
     PrimaryGeneratedColumn,
@@ -45,4 +46,7 @@ export class CategoryEntity extends BaseEntity {
 
     @Expose({ groups: ['category-list'] })
     depth = 0;
+
+    @DeleteDateColumn({ type: 'timestamp', nullable: true, comment: '删除时间' })
+    deletedAt: Date;
 }

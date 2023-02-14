@@ -1,6 +1,6 @@
 import { pick, unset } from 'lodash';
 
-import { FindOptionsUtils, FindTreeOptions, TreeRepository } from 'typeorm';
+import { FindOptionsUtils, FindTreeOptions, Not, TreeRepository } from 'typeorm';
 
 import { CustomerRepository } from '@/modules/database/decorators/repository.decorator';
 
@@ -19,7 +19,12 @@ export class CategoryRepository extends TreeRepository<CategoryEntity> {
      * 查询树形分类
      * @param options
      */
-    async findTrees(options?: FindTreeOptions) {
+    async findTrees(
+        options?: FindTreeOptions & {
+            onlyTrashed?: boolean;
+            withTrashed?: boolean;
+        },
+    ) {
         const roots = await this.findRoots(options);
         await Promise.all(roots.map((root) => this.findDescendantsTree(root, options)));
         return roots;
@@ -29,7 +34,12 @@ export class CategoryRepository extends TreeRepository<CategoryEntity> {
      * 查询顶级分类
      * @param options
      */
-    findRoots(options?: FindTreeOptions) {
+    findRoots(
+        options?: FindTreeOptions & {
+            onlyTrashed?: boolean;
+            withTrashed?: boolean;
+        },
+    ) {
         const escapeAlias = (alias: string) => this.manager.connection.driver.escape(alias);
         const escapeColumn = (column: string) => this.manager.connection.driver.escape(column);
 
@@ -38,6 +48,13 @@ export class CategoryRepository extends TreeRepository<CategoryEntity> {
 
         const qb = this.buildBaseQB().orderBy('category.customOrder', 'ASC');
         qb.where(`${escapeAlias('category')}.${escapeColumn(parentPropertyName)} IS NULL`);
+        if (options?.withTrashed) {
+            qb.withDeleted();
+            if (options?.onlyTrashed) {
+                qb.where({ isDeletedAt: Not(null) });
+            }
+        }
+
         FindOptionsUtils.applyOptionsToTreeQueryBuilder(qb, pick(options, ['relations', 'depth']));
         return qb.getMany();
     }
@@ -47,8 +64,20 @@ export class CategoryRepository extends TreeRepository<CategoryEntity> {
      * @param entity
      * @param options
      */
-    findDescendants(entity: CategoryEntity, options?: FindTreeOptions) {
+    findDescendants(
+        entity: CategoryEntity,
+        options?: FindTreeOptions & {
+            onlyTrashed?: boolean;
+            withTrashed?: boolean;
+        },
+    ) {
         const qb = this.createDescendantsQueryBuilder('category', 'treeClosure', entity);
+        if (options?.withTrashed) {
+            qb.withDeleted();
+            if (options?.onlyTrashed) {
+                qb.where({ isDeletedAt: Not(null) });
+            }
+        }
         FindOptionsUtils.applyOptionsToTreeQueryBuilder(qb, options);
         qb.orderBy(`category.customOrder`, 'ASC');
         return qb.getMany();
@@ -59,8 +88,20 @@ export class CategoryRepository extends TreeRepository<CategoryEntity> {
      * @param entity
      * @param options
      */
-    findAncestors(entity: CategoryEntity, options?: FindTreeOptions) {
+    findAncestors(
+        entity: CategoryEntity,
+        options?: FindTreeOptions & {
+            onlyTrashed?: boolean;
+            withTrashed?: boolean;
+        },
+    ) {
         const qb = this.createAncestorsQueryBuilder('category', 'treeClosure', entity);
+        if (options?.withTrashed) {
+            qb.withDeleted();
+            if (options?.onlyTrashed) {
+                qb.where({ isDeletedAt: Not(null) });
+            }
+        }
         FindOptionsUtils.applyOptionsToTreeQueryBuilder(qb, options);
         qb.orderBy(`category.customOrder`, 'ASC');
         return qb.getMany();
@@ -83,5 +124,33 @@ export class CategoryRepository extends TreeRepository<CategoryEntity> {
             data.push(...(await this.toFlatTrees(children, depth + 1, item)));
         }
         return data as CategoryEntity[];
+    }
+
+    async countDescendants(
+        entity: CategoryEntity,
+        options?: { withTrashed?: boolean; onlyTrashed?: boolean },
+    ) {
+        const qb = this.createDescendantsQueryBuilder('category', 'treeClosure', entity);
+        if (options?.withTrashed) {
+            qb.withDeleted();
+            if (options?.onlyTrashed) {
+                qb.where({ isDeletedAt: Not(null) });
+            }
+        }
+        return qb.getCount();
+    }
+
+    async countAncestors(
+        entity: CategoryEntity,
+        options?: { withTrashed?: boolean; onlyTrashed?: boolean },
+    ) {
+        const qb = this.createAncestorsQueryBuilder('category', 'treeClosure', entity);
+        if (options?.withTrashed) {
+            qb.withDeleted();
+            if (options?.onlyTrashed) {
+                qb.where({ isDeletedAt: Not(null) });
+            }
+        }
+        return qb.getCount();
     }
 }

@@ -15,6 +15,7 @@ import {
 import { CreatePostDto, QueryPostDto, UpdatePostDto } from '@/modules/content/dtos';
 import { PostService } from '@/modules/content/services';
 import { AppInterceptor } from '@/modules/core/providers/app.interceptor';
+import { DeleteWithTrashDto, RestoreDto } from '@/modules/restful/dtos';
 
 @UseInterceptors(AppInterceptor)
 @Controller('posts')
@@ -55,8 +56,16 @@ export class PostController {
     }
 
     @SerializeOptions({ groups: ['post-detail'] })
-    @Delete(':id')
-    async delete(@Param('id', new ParseIntPipe()) id: number) {
-        return this.service.delete(id);
+    @Delete()
+    async delete(@Body() data: DeleteWithTrashDto) {
+        const { ids, trash } = data;
+        return this.service.delete(ids, trash);
+    }
+
+    @Patch('restore')
+    @SerializeOptions({ groups: ['post-list'] })
+    async restore(@Body() data: RestoreDto) {
+        const { ids } = data;
+        return this.service.restore(ids);
     }
 }

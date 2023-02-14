@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { isArray, omit } from 'lodash';
+import { isArray, isNil, omit } from 'lodash';
 import { EntityNotFoundError, In, IsNull, Not, SelectQueryBuilder } from 'typeorm';
 
 import { PostOrderType } from '@/modules/content/constans';
@@ -8,6 +8,7 @@ import { CreatePostDto, QueryPostDto, UpdatePostDto } from '@/modules/content/dt
 import { PostEntity } from '@/modules/content/entities';
 import { CategoryRepository, PostRepository } from '@/modules/content/repositories';
 import { CategoryService } from '@/modules/content/services/category.service';
+import { SelectTrashMode } from '@/modules/database/constants';
 import { paginate } from '@/modules/database/helpers';
 import { QueryHook } from '@/modules/database/types';
 
@@ -66,9 +67,42 @@ export class PostService {
         return this.detail(data.id);
     }
 
-    async delete(id: number) {
-        const item = await this.repository.findOneByOrFail({ id });
-        return this.repository.remove(item);
+    async delete(ids: number[], trash?: boolean) {
+        const items = await this.repository.find({
+            where: { id: In(ids) },
+            withDeleted: true,
+        });
+        if (trash) {
+            const directs = items.filter((item) => !isNil(item.deletedAt));
+            const softS = items.filter((item) => isNil(item.deletedAt));
+
+            return [
+                ...(await this.repository.remove(directs)),
+                ...(await this.repository.softRemove(softS)),
+            ];
+        }
+
+        return this.repository.remove(items);
+    }
+
+    async restore(ids: number[]) {
+        const items = await this.repository.find({
+            where: { id: In(ids) },
+            withDeleted: true,
+        });
+
+        const trashedS = items.filter((item) => !isNil(item)).map((item) => item.id);
+        if (trashedS.length === 0) {
+            return [];
+        }
+
+        await this.repository.restore(trashedS);
+
+        const qb = await this.buildQueryList(this.repository.buildBaseQB(), {}, async (qBuilder) =>
+            qBuilder.andWhereInIds(trashedS),
+        );
+
+        return qb.getMany();
     }
 
     protected async buildQueryList(
@@ -76,7 +110,17 @@ export class PostService {
         options: FindParams,
         callback?: QueryHook<PostEntity>,
     ) {
-        const { isPublished, orderBy, category } = options;
+        const { isPublished, orderBy, category, trashed = SelectTrashMode.NONE } = options;
+
+        if (trashed === SelectTrashMode.ALL || trashed === SelectTrashMode.ONLY) {
+            qb.withDeleted();
+            if (trashed === SelectTrashMode.ONLY) {
+                qb.where({
+                    deletedAt: Not(null),
+                });
+            }
+        }
+
         if (typeof isPublished === 'boolean') {
             isPublished
                 ? qb.where({

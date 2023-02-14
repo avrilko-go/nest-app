@@ -1,11 +1,17 @@
 import { Injectable } from '@nestjs/common';
 
 import { isNil, omit } from 'lodash';
-import { EntityNotFoundError } from 'typeorm';
+import { EntityNotFoundError, In } from 'typeorm';
 
-import { CreateCategoryDto, QueryCategoryDto, UpdateCategoryDto } from '@/modules/content/dtos';
+import {
+    CreateCategoryDto,
+    QueryCategoryDto,
+    QueryCategoryTreeDto,
+    UpdateCategoryDto,
+} from '@/modules/content/dtos';
 import { CategoryEntity } from '@/modules/content/entities';
 import { CategoryRepository } from '@/modules/content/repositories';
+import { SelectTrashMode } from '@/modules/database/constants';
 import { manualPaginate } from '@/modules/database/helpers';
 
 @Injectable()
@@ -16,8 +22,12 @@ export class CategoryService {
         return this.repository.findOneByOrFail({ id });
     }
 
-    async findTrees() {
-        return this.repository.findTrees();
+    async findTrees(options: QueryCategoryTreeDto) {
+        const { trashed = SelectTrashMode.NONE } = options;
+        return this.repository.findTrees({
+            withTrashed: trashed === SelectTrashMode.ONLY || trashed === SelectTrashMode.ALL,
+            onlyTrashed: trashed === SelectTrashMode.ONLY,
+        });
     }
 
     /**
@@ -25,7 +35,11 @@ export class CategoryService {
      * @param options 分页选项
      */
     async paginate(options: QueryCategoryDto) {
-        const tree = await this.repository.findTrees();
+        const { trashed = SelectTrashMode.NONE } = options;
+        const tree = await this.repository.findTrees({
+            withTrashed: trashed === SelectTrashMode.ONLY || trashed === SelectTrashMode.ALL,
+            onlyTrashed: trashed === SelectTrashMode.ONLY,
+        });
         const data = await this.repository.toFlatTrees(tree);
         return manualPaginate(options, data);
     }
@@ -59,23 +73,51 @@ export class CategoryService {
 
     /**
      * 删除分类
-     * @param id
+     * @param ids
+     * @param trash
      */
-    async delete(id: number) {
-        const item = await this.repository.findOneOrFail({
-            where: { id },
+    async delete(ids: number[], trash?: boolean) {
+        const items = await this.repository.find({
+            where: { id: In(ids) },
+            withDeleted: true,
             relations: ['parent', 'children'],
         });
-        // 把子分类提升一级
-        if (!isNil(item.children) && item.children.length > 0) {
-            const nchildren = [...item.children].map((c) => {
-                c.parent = item.parent;
-                return item;
-            });
+        for (const item of items) {
+            // 把子分类提升一级
+            if (!isNil(item.children) && item.children.length > 0) {
+                const nchildren = [...item.children].map((c) => {
+                    c.parent = item.parent;
+                    return item;
+                });
 
-            await this.repository.save(nchildren);
+                await this.repository.save(nchildren);
+            }
         }
-        return this.repository.remove(item);
+
+        if (trash) {
+            const directs = items.filter((item) => !isNil(item.deletedAt));
+            const softS = items.filter((item) => isNil(item.deletedAt));
+            return [
+                ...(await this.repository.remove(directs)),
+                ...(await this.repository.softRemove(softS)),
+            ];
+        }
+
+        return this.repository.remove(items);
+    }
+
+    async restore(ids: number[]) {
+        const items = await this.repository.find({
+            where: { id: In(ids) } as any,
+            withDeleted: true,
+        });
+
+        const trashedS = items.filter((item) => !isNil(item)).map((item) => item.id);
+        if (trashedS.length < 0) return [];
+        await this.repository.restore(trashedS);
+        const qb = this.repository.buildBaseQB();
+        qb.andWhereInIds(trashedS);
+        return qb.getMany();
     }
 
     protected async getParent(current?: number, id?: number) {

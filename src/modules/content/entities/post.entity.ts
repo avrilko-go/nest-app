@@ -3,6 +3,7 @@ import {
     BaseEntity,
     Column,
     CreateDateColumn,
+    DeleteDateColumn,
     Entity,
     JoinTable,
     ManyToMany,
@@ -78,4 +79,7 @@ export class PostEntity extends BaseEntity {
 
     @Expose()
     commentCount: number;
+
+    @DeleteDateColumn({ type: 'timestamp', nullable: true, comment: '删除时间' })
+    deletedAt: Date;
 }

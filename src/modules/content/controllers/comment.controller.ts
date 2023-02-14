@@ -3,8 +3,6 @@ import {
     Controller,
     Delete,
     Get,
-    Param,
-    ParseIntPipe,
     Post,
     Query,
     SerializeOptions,
@@ -14,6 +12,7 @@ import {
 import { CreateCommentDto, QueryCommentDto, QueryCommentTreeDto } from '@/modules/content/dtos';
 import { CommentService } from '@/modules/content/services';
 import { AppInterceptor } from '@/modules/core/providers/app.interceptor';
+import { DeleteDto } from '@/modules/restful/dtos';
 
 @UseInterceptors(AppInterceptor)
 @Controller('comments')
@@ -49,7 +48,8 @@ export class CommentController {
 
     @Delete(':id')
     @SerializeOptions({ groups: ['comment-detail'] })
-    async delete(@Param('id', new ParseIntPipe()) id: number) {
-        return this.service.delete(id);
+    async delete(@Body() data: DeleteDto) {
+        const { ids } = data;
+        return this.service.delete(ids);
     }
 }

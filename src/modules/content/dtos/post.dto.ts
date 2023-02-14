@@ -17,6 +17,7 @@ import { PostOrderType, PostType } from '@/modules/content/constans';
 import { CategoryEntity } from '@/modules/content/entities';
 import { DtoValidation } from '@/modules/core/decorators';
 import { toBoolean } from '@/modules/core/helpers';
+import { SelectTrashMode } from '@/modules/database/constants';
 import { IsDataExist } from '@/modules/database/constraints';
 import { PaginateOptions } from '@/modules/database/types';
 
@@ -51,6 +52,10 @@ export class QueryPostDto implements PaginateOptions {
     @IsOptional()
     @IsEnum(PostOrderType, { message: `排序规则必须是${Object.values(PostOrderType).join(',')}` })
     orderBy?: PostOrderType;
+
+    @IsOptional()
+    @IsEnum(SelectTrashMode)
+    trashed?: SelectTrashMode;
 }
 
 @DtoValidation({
