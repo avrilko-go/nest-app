@@ -43,8 +43,6 @@ export class PostService {
     }
 
     async create(data: CreatePostDto) {
-        console.log(this.categoryRepository);
-
         const createPostDto = {
             ...data,
             // 文章所属分类
@@ -183,21 +181,21 @@ export class PostService {
                 qb.andWhere('title LIKE :search', { search: `%${search}%` })
                     .orWhere('body LIKE :search', { search: `%${search}%` })
                     .orWhere('summary LIKE :search', { search: `%${search}%` })
-                    .orWhere('post.categories LIKE :search', {
+                    .orWhere('categories.name LIKE :search', {
                         search: `%${search}%`,
                     });
             } else {
                 qb.andWhere('MATCH(title) AGAINST (:search IN BOOLEAN MODE)', {
-                    search: `${search}`,
+                    search: `${search}*`,
                 })
                     .orWhere('MATCH(body) AGAINST (:search IN BOOLEAN MODE)', {
-                        search: `${search}`,
+                        search: `${search}*`,
                     })
                     .orWhere('MATCH(summary) AGAINST (:search IN BOOLEAN MODE)', {
-                        search: `${search}`,
+                        search: `${search}*`,
                     })
                     .orWhere('MATCH(categories.name) AGAINST (:search IN BOOLEAN MODE)', {
-                        search: `${search}`,
+                        search: `${search}*`,
                     });
             }
         }

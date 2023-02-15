@@ -48,8 +48,8 @@ export class ContentModule {
                 ],
                 useFactory: (
                     postRepository: PostRepository,
-                    categoryRepository: CategoryRepository,
                     categoryService: CategoryService,
+                    categoryRepository: CategoryRepository,
                     searchService?: SearchService,
                 ) =>
                     new PostService(
