@@ -29,7 +29,12 @@ export class SearchService {
         return this.elasticsearchService.index<PostSearchBody>({
             index: this.index,
             document: {
-                ...pick(instanceToPlain(post), ['id', 'title', 'body', 'summary']),
+                ...pick(instanceToPlain(post, { groups: ['post-detail'] }), [
+                    'id',
+                    'title',
+                    'body',
+                    'summary',
+                ]),
                 categories: (post.categories.map((v) => v.id.toString()) ?? []).join(','),
             },
         });
@@ -37,11 +42,15 @@ export class SearchService {
 
     async update(post: PostEntity) {
         const newBody: PostSearchBody = {
-            ...pick(instanceToPlain(post), ['title', 'body', 'summary']),
+            ...pick(instanceToPlain(post, { groups: ['post-detail'] }), [
+                'title',
+                'body',
+                'summary',
+            ]),
             categories: (post.categories.map((v) => v.id.toString()) ?? []).join(','),
         };
         const script = Object.entries(newBody).reduce(
-            (result, [key, value]) => `${result} ctx._source.${key}=>'${value}'`,
+            (result, [key, value]) => `${result} ctx._source["${key}"]="${value}";`,
             '',
         );
         return this.elasticsearchService.updateByQuery({

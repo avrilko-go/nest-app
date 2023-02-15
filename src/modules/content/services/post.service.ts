@@ -56,8 +56,9 @@ export class PostService {
         };
         const item = await this.repository.save(createPostDto);
         if (!isNil(this.searchService)) {
+            const searchData = await this.detail(item.id);
             try {
-                await this.searchService.create(item);
+                await this.searchService.create(searchData);
             } catch (err) {
                 throw new InternalServerErrorException(err);
             }
